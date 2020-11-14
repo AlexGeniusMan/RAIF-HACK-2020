@@ -24,6 +24,8 @@ from .yasg import urlpatterns as doc_url
 urlpatterns = [
     path('admin/', admin.site.urls),
 
+    path('api/get_qr', main_app.CreateProductRefView.as_view()),  # GET - gets current product
+
     path('api/products/<int:product_pk>', main_app.ShowProductView.as_view()),  # GET - gets current product
     path('api/stores/<int:store_pk>', main_app.ShowStoreView.as_view()),  # GET - gets current store
 
