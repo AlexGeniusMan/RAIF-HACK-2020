@@ -2,11 +2,11 @@ from rest_framework import serializers
 from .models import *
 
 
-class OrderSerializer(serializers.ModelSerializer):
-    class Meta:
-        depth = 2
-        model = Order
-        fields = ('id', 'qr_code')
+# class OrderSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         depth = 2
+#         model = Order
+#         fields = ('id', 'qr_code')
 
 
 class StoreSerializer(serializers.ModelSerializer):

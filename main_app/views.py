@@ -1,3 +1,4 @@
+import requests
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from django.db.models import Q
 from rest_framework.views import APIView
@@ -7,6 +8,8 @@ import base64
 from .models import *
 from .serializers import *
 from skimage.transform import rescale
+import json
+from datetime import datetime
 
 
 # import qrcode
@@ -17,70 +20,68 @@ from skimage.transform import rescale
 # from PIL import Image
 
 
+class CheckOrderStatusView(APIView):
+    """
+    Checks order status
+    """
+
+
 class CreateProductRefView(APIView):
     """
-    Creates QR-code
+    Creates fast and slow QR-codes
     """
 
     def post(self, request, *args, **kwargs):
         url = 'https://devgang.ru/?admin_email=' + str(request.data.get('admin_email')) + '&product_name=' + str(
             request.data.get('product_name')) + '&nickname=' + str(request.data.get('nickname'))
 
-        qr = qrcode.QRCode(version=1, box_size=5, border=5)
-        qr.add_data(url)
-        qr.make(fit=True)
-        img = qr.make_image(fill='black', back_color='white')
-        img.save('qr_code_temp.png')
+        # qr = qrcode.QRCode(version=1, box_size=5, border=5)
+        # qr.add_data(url)
+        # qr.make(fit=True)
+        # img = qr.make_image(fill='black', back_color='white')
+        # img.save('qr_code_temp.png')
+
+        order = Order(nickname=str(request.data.get('nickname')), url=url)
+        order.save()
+
+        print(order.qr_code)
 
         with open('qr_code_temp.png', "rb") as image_file:
-            encoded_image = base64.b64encode(image_file.read())
+            qr_slow = base64.b64encode(image_file.read())
+
+        now = datetime.now()
+        dt_string = now.strftime("%d/%m/%Y %H:%M:%S")
+
+        json_temp = {
+            "additionalInfo": "kriper2004",
+            "amount": 3,
+            "createDate": "2019-07-22T09:14:38.107227+03:00",
+            "currency": "RUB",
+            "order": dt_string,
+            "paymentDetails": "Назначение платежа",
+            "qrType": "QRDynamic",
+            "sbpMerchantId": "MA543301"
+        }
+        str_temp = json.dumps(json_temp)
+
+        url = "https://test.ecom.raiffeisen.ru/api/sbp/v1/qr/register"
+
+        payload = str_temp
+        headers = {
+            'Content-Type': 'application/json'
+        }
+
+        response = requests.request("POST", url, headers=headers, data=payload)
+        dict_temp = json.loads(response.text)
+        print(dict_temp)
+        qr_fast = dict_temp['qrUrl']
+        qr_fast_id = dict_temp['qrId']
 
         return Response({
-            'qr_code': encoded_image
+            'qr_fast_id': qr_fast_id,
+            'qr_fast': qr_fast,
+            'qr_slow': 'http://127.0.0.1:8000/media/' + str(order.qr_code)
         })
-
-        # ej_response = requests.post(
-        #     'http://188.120.248.65:8065/ejapi/tasks/run',
-        #     json={
-        #         'key': key,
-        #         'language': language,
-        #         'code': code,
-        #         'tests': tests,
-        #         'time_limit_millis': time_limit_millis,
-        #         'user_id': user_id
-        #     }
-        # )
-
-        # ej_response = ej_response.json()
-
-        # if ej_response['body'] == '':
-        #     data = {
-        #         'status': ej_response['status'],
-        #         'error': ej_response['error']
-        #     }
-
-        #     return Response(json.dumps(data))
-        # else:
-        #     is_done = True
-        #     tests_count = len(ej_response['body'])
-        #     good_tests_count = 0
-        #     for el in ej_response['body']:
-        #         if not el['status']:
-        #             is_done = False
-        #         else:
-        #             good_tests_count += 1
-        #
-        #     data = {
-        #         'status': ej_response['status'],
-        #         'mark': int(good_tests_count / tests_count * 100)
-        #     }
-        #
-        # if is_done:
-        #     task_detail = TaskDetail.objects.get(task=request.POST['task_id'], students=request.user.id)
-        #     task_detail.is_done = True
-        #     task_detail.save()
-        #
-        # return Response(json.dumps(data))
 
 
 class ShowStoreView(APIView):
