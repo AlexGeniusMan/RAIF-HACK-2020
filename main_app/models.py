@@ -65,6 +65,8 @@ from PIL import Image, ImageDraw
 #     canvas.close()
 #     super().save(*args, **kwargs)
 
+
+
 class Order(models.Model):
     nickname = models.CharField(_("Ник покупателя"), max_length=64, blank=False)
     url = models.CharField(_('URL'), max_length=200, blank=True)
